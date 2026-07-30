@@ -1,6 +1,7 @@
 # Streamlit movie recommendation app. Run with:
 #   streamlit run app2.py
 
+import os
 import sys
 from typing import Any
 
@@ -12,8 +13,27 @@ from sklearn.metrics.pairwise import linear_kernel
 MOVIES_CSV = "data/movies.csv"
 
 
+def create_sample_dataset(csv_path: str = MOVIES_CSV) -> None:
+    """Creates a dummy dataset if the file doesn't exist to prevent crashes."""
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    sample_data = {
+        "title": ["Inception", "Interstellar", "The Matrix", "Toy Story", "The Dark Knight"],
+        "description": [
+            "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea.",
+            "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+            "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+            "A cowboy doll is profoundly threatened and jealous when a new spaceman action figure supplants him as top toy in a boy's bedroom.",
+            "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological tests."
+        ]
+    }
+    df = pd.DataFrame(sample_data)
+    df.to_csv(csv_path, index=False)
+
+
 @st.cache_data
 def load_movies(csv_path: str = MOVIES_CSV) -> pd.DataFrame:
+    if not os.path.exists(csv_path):
+        create_sample_dataset(csv_path)
     return pd.read_csv(csv_path)
 
 
@@ -79,6 +99,10 @@ def app() -> None:
         "Explore a content-based recommendation engine powered by TF-IDF similarity on movie descriptions."
     )
 
+    # Check and load data safely
+    if not os.path.exists(MOVIES_CSV):
+        st.warning("⚠️ `data/movies.csv` was missing. A sample dataset has been generated automatically so the app works out-of-the-box!")
+    
     movies = load_movies()
     vectorizer, tfidf_matrix = build_tfidf_matrix(movies)
     tags = extract_popular_tags(movies)
